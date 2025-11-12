@@ -1,0 +1,19 @@
+{
+  "project_id": "autoconnect",
+  "task": {
+    "id": "task-0001",
+    "prompt": "Log in as Demo User and navigate to the profile page.",
+    "url": "http://localhost:8008/",
+    "tests": [
+      {
+        "type": "CheckEventTest",
+        "event_name": "VIEW_USER_PROFILE",
+        "event_criteria": {"name": "Demo User"},
+        "description": "Profile page viewed"
+      }
+    ],
+    "relevant_data": {},
+    "should_record": false,
+    "web_project_id": "autoconnect"
+  }
+}
