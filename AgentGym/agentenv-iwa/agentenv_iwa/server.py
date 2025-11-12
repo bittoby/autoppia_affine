@@ -25,7 +25,9 @@ class CreateResponse(BaseModel):
 class ResetRequest(BaseModel):
     env_idx: int
     seed: int | None = None
-    idx: int
+    idx: int | None = None
+    file: str | None = None
+    task_idx: int | None = None
 
 
 class StepRequest(BaseModel):
@@ -54,15 +56,56 @@ async def create():
 
 @app.post("/reset")
 async def reset(req: ResetRequest):
-    # Load config file ./config_files/{idx}.json expected to contain {"project_id": str, "task": {...}}
     import json, os
-    cfg_path = os.path.join("./config_files", f"{req.idx}.json")
-    try:
-        with open(cfg_path) as f:
-            cfg = json.load(f)
-    except Exception:
+    project_id = None
+    task = None
+    if req.file:
+        cfg_path = req.file if os.path.isabs(req.file) else os.path.join("./config_files", req.file)
+        try:
+            with open(cfg_path) as f:
+                cfg = json.load(f)
+        except Exception:
+            return {"observation": "ConfigError", "project_id": None}
+        tidx = req.task_idx or 0
+        # Support three shapes (preference: keep each task object same as single-task structure):
+        # 1) List[ {"project_id": ..., "task": {...}} ]
+        # 2) { "tasks": [ {"project_id": ..., "task": {...}}, ... ] }
+        # 3) Single-task dict {"project_id": ..., "task": {...}} (for convenience)
+        if isinstance(cfg, list):
+            if tidx < 0 or tidx >= len(cfg):
+                return {"observation": "ConfigError", "project_id": None}
+            item = cfg[tidx]
+            if not isinstance(item, dict):
+                return {"observation": "ConfigError", "project_id": None}
+            project_id = item.get("project_id")
+            task = item.get("task")
+        elif isinstance(cfg, dict) and "tasks" in cfg:
+            tasks = cfg.get("tasks") or []
+            if not isinstance(tasks, list) or tidx < 0 or tidx >= len(tasks):
+                return {"observation": "ConfigError", "project_id": None}
+            item = tasks[tidx]
+            if not isinstance(item, dict):
+                return {"observation": "ConfigError", "project_id": None}
+            project_id = item.get("project_id")
+            task = item.get("task")
+        else:
+            project_id = cfg.get("project_id") if isinstance(cfg, dict) else None
+            task = cfg.get("task") if isinstance(cfg, dict) else None
+    else:
+        if req.idx is None:
+            return {"observation": "ConfigError", "project_id": None}
+        cfg_path = os.path.join("./config_files", f"{req.idx}.json")
+        try:
+            with open(cfg_path) as f:
+                cfg = json.load(f)
+        except Exception:
+            return {"observation": "ConfigError", "project_id": None}
+        project_id = cfg.get("project_id") if isinstance(cfg, dict) else None
+        task = cfg.get("task") if isinstance(cfg, dict) else None
+
+    if not project_id or not task:
         return {"observation": "ConfigError", "project_id": None}
-    options = {"project_id": cfg.get("project_id"), "task": cfg.get("task")}
+    options = {"project_id": project_id, "task": task}
     obs, info = await asyncio.to_thread(iwa_env_server.reset, req.env_idx, req.seed, options)
     return {"observation": obs, "project_id": options.get("project_id"), "url": info.get("url")}
 

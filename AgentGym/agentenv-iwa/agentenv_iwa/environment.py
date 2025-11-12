@@ -191,6 +191,8 @@ class IwaEnvServer:
         return env_idx
 
     def _cmd(self, env_idx: int, cmd: str, **data):
+        if env_idx not in self.send:
+            raise RuntimeError(f"env_idx {env_idx} not found")
         self.send[env_idx].send({"cmd": cmd, "data": data})
         ret = self.send[env_idx].recv()
         if isinstance(ret, dict) and ret.get("error"):
