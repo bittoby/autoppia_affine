@@ -37,11 +37,11 @@ python -m playwright install --with-deps
 
 From `AgentGym/agentenv-iwa`:
 ```bash
-python -m agentenv_iwa.launch --host 0.0.0.0 --port 8070 --workers 1
+python -m agentenv_iwa.launch --host 0.0.0.0 --port 8060 --workers 1
 ```
 Health check:
 ```bash
-curl -s http://localhost:8070/
+curl -s http://localhost:8060/
 # {"status":"ok"}
 ```
 
@@ -74,24 +74,24 @@ Task configs are in `AgentGym/agentenv-iwa/config_files/{idx}.json`. Example `0.
 
 ```bash
 # Create env
-curl -s -X POST http://localhost:8070/create
+curl -s -X POST http://localhost:8060/create
 # -> {"env_idx":0}
 
 # Reset and load task idx=0
-curl -s -X POST http://localhost:8070/reset \
+curl -s -X POST http://localhost:8060/reset \
   -H 'Content-Type: application/json' \
   -d '{"env_idx":0,"seed":0,"idx":0}'
 
 # Observation
-curl -s "http://localhost:8070/observation?env_idx=0"
+curl -s "http://localhost:8060/observation?env_idx=0"
 
 # Step (navigate)
-curl -s -X POST http://localhost:8070/step \
+curl -s -X POST http://localhost:8060/step \
   -H 'Content-Type: application/json' \
   -d '{"env_idx":0,"action":"```{\"type\":\"NavigateAction\",\"url\":\"http://localhost:8008/\"}```"}'
 
 # Finish/evaluate
-curl -s -X POST http://localhost:8070/step \
+curl -s -X POST http://localhost:8060/step \
   -H 'Content-Type: application/json' \
   -d '{"env_idx":0,"action":"```stop```"}'
 ```
@@ -105,7 +105,7 @@ Edit `AgentGym-RL/AgentGym-RL/verl/agent_trainer/config/ppo_trainer.yaml`:
 actor_rollout_ref:
   agentgym:
     task_name: iwa
-    env_addr: 'http://localhost:8070'
+    env_addr: 'http://localhost:8060'
     max_retries: 10
     max_rounds: 10
     timeout: 300
@@ -302,7 +302,7 @@ Actions are a single JSON object wrapped in triple backticks:
 
 - `ModuleNotFoundError: agentenv`:
   ```bash
-  pip install -e /home/chan/Agentenv_workspace/autoppia_affine/AgentGym/agentenv
+  pip install -e /home/chan/Agentenv_workspace/AgentGym/agentenv
   python -c "import agentenv; print(agentenv.__file__)"
   ```
 - vLLM/CUDA warnings with HF rollout: harmless when `rollout.name: hf`.
